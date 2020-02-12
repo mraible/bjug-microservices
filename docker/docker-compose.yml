@@ -1,0 +1,120 @@
+version: '2'
+services:
+  blog:
+    image: blog
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m
+      - 'SPRING_PROFILES_ACTIVE=prod,swagger'
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - 'EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/eureka'
+      - 'SPRING_CLOUD_CONFIG_URI=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/config'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://blog-postgresql:5432/blog'
+      - 'SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_OIDC_ISSUER_URI=http://keycloak:9080/auth/realms/jhipster'
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_ID=internal
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_SECRET=internal
+      - JHIPSTER_SLEEP=30
+      - 'SPRING_DATA_JEST_URI=http://blog-elasticsearch:9200'
+      - 'SPRING_ELASTICSEARCH_REST_URIS=http://blog-elasticsearch:9200'
+      - JHIPSTER_REGISTRY_PASSWORD=admin
+  blog-postgresql:
+    image: 'postgres:12.1'
+    environment:
+      - POSTGRES_USER=blog
+      - POSTGRES_PASSWORD=
+  blog-elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:6.8.6'
+    environment:
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - discovery.type=single-node
+
+  gateway:
+    image: gateway
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m
+      - 'SPRING_PROFILES_ACTIVE=prod,swagger'
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - 'EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/eureka'
+      - 'SPRING_CLOUD_CONFIG_URI=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/config'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://gateway-postgresql:5432/gateway'
+      - 'SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_OIDC_ISSUER_URI=http://keycloak:9080/auth/realms/jhipster'
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_ID=web_app
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_SECRET=web_app
+      - JHIPSTER_SLEEP=30
+      - 'SPRING_DATA_JEST_URI=http://gateway-elasticsearch:9200'
+      - 'SPRING_ELASTICSEARCH_REST_URIS=http://gateway-elasticsearch:9200'
+      - JHIPSTER_REGISTRY_PASSWORD=admin
+    ports:
+      - '8080:8080'
+  gateway-postgresql:
+    image: 'postgres:12.1'
+    environment:
+      - POSTGRES_USER=gateway
+      - POSTGRES_PASSWORD=
+  gateway-elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:6.8.6'
+    environment:
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - discovery.type=single-node
+
+  store:
+    image: store
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m
+      - 'SPRING_PROFILES_ACTIVE=prod,swagger'
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - 'EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/eureka'
+      - 'SPRING_CLOUD_CONFIG_URI=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/config'
+      - 'SPRING_DATA_MONGODB_URI=mongodb://store-mongodb:27017'
+      - SPRING_DATA_MONGODB_DATABASE=store
+      - 'SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_OIDC_ISSUER_URI=http://keycloak:9080/auth/realms/jhipster'
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_ID=internal
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_OIDC_CLIENT_SECRET=internal
+      - JHIPSTER_SLEEP=30
+      - 'SPRING_DATA_JEST_URI=http://store-elasticsearch:9200'
+      - 'SPRING_ELASTICSEARCH_REST_URIS=http://store-elasticsearch:9200'
+      - JHIPSTER_REGISTRY_PASSWORD=admin
+  store-mongodb:
+    image: 'mongo:4.0.16'
+  store-elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:6.8.6'
+    environment:
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - discovery.type=single-node
+
+  jhipster-registry:
+    extends:
+      file: jhipster-registry.yml
+      service: jhipster-registry
+
+  jhipster-elasticsearch:
+    extends:
+      file: jhipster-console.yml
+      service: jhipster-elasticsearch
+  jhipster-logstash:
+    extends:
+      file: jhipster-console.yml
+      service: jhipster-logstash
+    depends_on:
+      - jhipster-elasticsearch
+  jhipster-console:
+    extends:
+      file: jhipster-console.yml
+      service: jhipster-console
+    depends_on:
+      - jhipster-elasticsearch
+  jhipster-import-dashboards:
+    extends:
+      file: jhipster-console.yml
+      service: jhipster-import-dashboards
+    depends_on:
+      - jhipster-elasticsearch
+  jhipster-zipkin:
+    extends:
+      file: jhipster-console.yml
+      service: jhipster-zipkin
+    depends_on:
+      - jhipster-elasticsearch
+  keycloak:
+    extends:
+      file: keycloak.yml
+      service: keycloak
