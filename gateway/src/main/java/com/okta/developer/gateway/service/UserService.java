@@ -168,7 +168,12 @@ public class UserService {
             // if IdP sends last updated information, use it to determine if an update should happen
             if (details.get("updated_at") != null) {
                 Instant dbModifiedDate = existingUser.get().getLastModifiedDate();
-                Instant idpModifiedDate = new Date(Long.valueOf((Integer) details.get("updated_at"))).toInstant();
+                Instant idpModifiedDate;
+                if (details.get("updated_at") instanceof Instant) {
+                    idpModifiedDate = (Instant) details.get("updated_at");
+                } else {
+                    idpModifiedDate = new Date(Long.valueOf((Integer) details.get("updated_at"))).toInstant();
+                }
                 if (idpModifiedDate.isAfter(dbModifiedDate)) {
                     log.debug("Updating user '{}' in local database", user.getLogin());
                     updateUser(user.getFirstName(), user.getLastName(), user.getEmail(),
