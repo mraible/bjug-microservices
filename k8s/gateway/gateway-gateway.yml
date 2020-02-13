@@ -1,0 +1,44 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: gateway-gateway
+  namespace: default
+  labels:
+    gateway: gateway-gateway
+    istio: ingressgateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - gateway.default.35.193.119.22.nip.io
+    - port:
+        number: 80
+        name: http2
+        protocol: HTTP2
+      hosts:
+        - gateway.default.35.193.119.22.nip.io
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: gateway-gw-virtualservice
+  namespace: default
+  labels:
+    service: gateway-gw-virtualservice
+spec:
+  hosts:
+    - gateway.default.35.193.119.22.nip.io
+  gateways:
+    - gateway-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: gateway

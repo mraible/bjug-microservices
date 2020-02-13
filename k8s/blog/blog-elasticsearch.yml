@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blog-elasticsearch-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-elasticsearch
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: blog-elasticsearch
+      annotations:
+        sidecar.istio.io/inject: 'false'
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: blog-elasticsearch-pvc
+      initContainers:
+        - name: init-sysctl
+          image: busybox
+          command:
+            - sysctl
+            - -w
+            - vm.max_map_count=262144
+          securityContext:
+            privileged: true
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:6.8.6
+          ports:
+            - containerPort: 9200
+              name: http
+              protocol: TCP
+            - containerPort: 9300
+              name: transport
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data/
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '500m'
+            limits:
+              memory: '2Gi'
+              cpu: '1'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-elasticsearch
+  namespace: default
+spec:
+  selector:
+    app: blog-elasticsearch
+  ports:
+    - port: 9200
+      name: http
+      protocol: TCP
+    - port: 9300
+      name: transport
+      protocol: TCP
